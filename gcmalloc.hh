@@ -38,10 +38,9 @@ public:
   void setCookie() {
     cookie = (uintptr_t) 0xdeadbeef ^ (uintptr_t) this;
   }
-private:
+public:
   size_t cookie;  // magic number at the start of every object
   size_t allocatedSize; // how much space was allocated for it (mark bits encoded here)
-public:
   // prev and next objects, whether allocated or freed.
   Header * prevObject;
   Header * nextObject;
