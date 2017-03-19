@@ -2,6 +2,15 @@ static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
 
 template <class SourceHeap>
+GCMalloc<SourceHeap>::GCMalloc(){
+    allocatedObjects = nullptr;
+    for (auto& f : freedObjects) {
+      f = nullptr;
+    }
+}
+
+
+template <class SourceHeap>
 void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   // If Size is lesser than zero return Null pointer
   if(sz <= 0)
