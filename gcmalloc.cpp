@@ -92,7 +92,7 @@ template <class SourceHeap>
 size_t GCMalloc<SourceHeap>::getSize(void * p) {
   void *ptr = static_cast<char*>(p) - sizeof(Header);
   Header *h = static_cast<Header*>(ptr);
-  return h->allocatedSize;
+  return h->getAllocatedSize();
 }
 
 
@@ -133,7 +133,7 @@ size_t GCMalloc<SourceHeap>::getSizeFromClass(int index) {
 
 
 template <class SourceHeap>
-int GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
+int constexpr GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
   int number = sz;
   int classInd = 0;
   int maxIndexAllowedForMultiplesOfThresholdByBase = (Threshold/Base)-1; // 1023 is the max allowed index accessible by FreedObjects 
