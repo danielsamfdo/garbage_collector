@@ -167,3 +167,58 @@ int constexpr GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
   classInd+=position-minPowerOfTwoAllowed+1;
   return classInd;
 }
+
+
+// Scan through this region of memory looking for pointers to mark (and mark them).
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::scan(void * start, void * end){
+
+}
+  
+  // Indicate whether it is time to trigger a garbage collection
+  // (call this inside your malloc).
+  // Clearly this must happen when the heap is entirely full,
+  // but for performance reasons, you should trigger GCs more frequently
+  // (though not too frequently) using the fields below.
+template <class SourceHeap>
+bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
+
+}
+
+// Perform a garbage collection pass.
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::gc(){
+
+}
+  
+  // Mark all reachable objects.
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::mark(){
+
+}
+
+// Mark one object as reachable and recursively mark everything reachable from it.
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::markReachable(void * ptr){
+
+}
+
+// Reclaim all unreachable objects (add to free lists).
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::sweep(){
+
+}
+
+// Free one object.
+template <class SourceHeap>
+void GCMalloc<SourceHeap>::privateFree(void *){
+
+}
+
+  // Returns true if the argument looks like a pointer that we allocated.
+  // This should be as precise as possible without ignoring real allocated objects.
+  // Just returning true is *not* an option :)
+template <class SourceHeap>
+bool GCMalloc<SourceHeap>::isPointer(void * p){
+    return true;
+}
