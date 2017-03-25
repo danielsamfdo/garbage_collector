@@ -15,7 +15,9 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   // If Size is lesser than zero return Null pointer
   if(sz <= 0)
     return nullptr;
-
+  if(triggerGC(sz)){
+    gc();
+  }
   unsigned int headerSize = sizeof(Header);
   
   int sizeClass = GCMalloc<SourceHeap>::getSizeClass(sz);
@@ -182,19 +184,20 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
   // (though not too frequently) using the fields below.
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
-
+  return true;
 }
 
 // Perform a garbage collection pass.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
-
+  mark();
+  sweep();
 }
   
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-
+  
 }
 
 // Mark one object as reachable and recursively mark everything reachable from it.
@@ -211,7 +214,7 @@ void GCMalloc<SourceHeap>::sweep(){
 
 // Free one object.
 template <class SourceHeap>
-void GCMalloc<SourceHeap>::privateFree(void *){
+void GCMalloc<SourceHeap>::privateFree(void * p){
 
 }
 
