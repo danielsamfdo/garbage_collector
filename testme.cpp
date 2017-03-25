@@ -30,7 +30,7 @@ int main()
   *p2 = 12;
   for (int i = 0; i < 2; i++) {
     char * ptr = (char *) malloc(256);
-    cout << "ptr should not be reachable: " << (size_t) ptr << endl;
+    cout << "ptr should not be reachable: Address" << (size_t) ptr << endl;
   }
 
   

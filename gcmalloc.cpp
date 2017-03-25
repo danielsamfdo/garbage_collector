@@ -4,6 +4,7 @@ static const auto minPowerOfTwoAllowed = 15;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
+    endHeap = static_cast<char *>(SourceHeap::getStart()) + SourceHeap::getRemaining();
     allocatedObjects = nullptr;
     for (auto& f : freedObjects) {
       f = nullptr;
@@ -64,6 +65,10 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
       initialized = true;
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
+    tprintf("SIze of Header @\n",(size_t) static_cast<char*>(ptr));
+    // endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
+    // void * endPointer = (static_cast<char*>(endHeap));
+    // tprintf("END HEAP UPDATE @\n",(size_t)&endPointer);
   }
 
   // When we are altering links, we need to make sure it is thread safe.
@@ -81,9 +86,9 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   block->setCookie();
   heapLock.unlock();
   allocated += allocatedForTheRequest;
+  block->setAllocatedSize(allocatedForTheRequest);
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two
   ptr = static_cast<char*>(ptr) + headerSize;
-  endHeap = static_cast<char*>(ptr) + allocatedForTheRequest;
   // http://stackoverflow.com/questions/1898153/how-to-determine-if-memory-is-aligned-testing-for-alignment-not-aligning
   if((((unsigned long)ptr % Alignment) != 0))
     return nullptr; // Memory Alignment Issue
@@ -206,7 +211,7 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkGlobals([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
   sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
@@ -215,11 +220,20 @@ void GCMalloc<SourceHeap>::mark(){
 // Mark one object as reachable and recursively mark everything reachable from it.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::markReachable(void * ptr){
-  void *p = static_cast<char*>(ptr) - sizeof(Header); 
-  Header *h = static_cast<Header*>(p);
+  Header *h;
+  void *p;
+  do{
+    p = static_cast<char*>(ptr) - sizeof(Header); 
+    h = static_cast<Header*>(p);
+    if(h->validateCookie())
+      break;
+    ptr = static_cast<char*>(ptr) - 1;
+  }while(true);
+  
   if(h->validateCookie()){
     h->mark();
-    tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
+    // CALL SCAN
+    //tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
   }
   // tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie());
 }
@@ -227,20 +241,35 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
 // Reclaim all unreachable objects (add to free lists).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
-  char * currPointer = static_cast<char*>(startHeap);
-  char * endPointer = static_cast<char*>(endHeap);
-  while(currPointer<=endPointer){
-    Header *h = static_cast<Header*>((void *)currPointer);
-    currPointer += sizeof(Header);
-    if(h->isMarked()){
-      h->clear();
+  Header *iterator = allocatedObjects;
+  tprintf("Doing Sweep\n");
+  // size_t count = 0;
+  while(iterator!=nullptr){
+    if(!iterator->isMarked()){
+      Header *h = iterator;
+      size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
+      if(h == allocatedObjects){ // If the free block is the head
+        allocatedObjects = allocatedObjects->nextObject;
+        iterator = allocatedObjects;
+      }
+      else{ // If the free block is not the head
+          Header *prev = h->prevObject;
+          Header *next = h->nextObject;
+          if(prev)
+            prev->nextObject = next;
+          if(next)
+            next->prevObject = prev;
+          iterator = next;
+        }
+      h->prevObject = nullptr;
+      h->nextObject = freedObjects[sizeClass];
+      freedObjects[sizeClass] = h;
+      heapLock.unlock();
+      allocated -= h->getAllocatedSize();
+    }else{
+      iterator = iterator->nextObject;
     }
-    else{
-      tprintf("Freeing this address @ which has an allocated memory of @ \n",(size_t)currPointer, h->getAllocatedSize());
-    }
-    currPointer += h->getAllocatedSize();
   }
-   
 }
 
 // Free one object.
@@ -255,6 +284,8 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
   size_t value = (size_t)p;
+  void * t = static_cast<char *>(p);
+  // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
   if(startHeap<= p && p<=endHeap)
     return true;
   return false;
