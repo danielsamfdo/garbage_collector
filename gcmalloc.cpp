@@ -227,17 +227,19 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
 // Reclaim all unreachable objects (add to free lists).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
-  // void * startPointer = startHeap;
-  // void * endPointer = endHeap;
-  // Header *h = static_cast<Header*>(startPointer);
-  // while(startPointer<=endPointer){
-  //   if(h->isMarked()){
-  //     h->clear();
-  //   }
-  //   else{
-  //     tprintf("Freeing this address @ \n", h-> );
-  //   }
-  // }
+  char * currPointer = static_cast<char*>(startHeap);
+  char * endPointer = static_cast<char*>(endHeap);
+  while(currPointer<=endPointer){
+    Header *h = static_cast<Header*>((void *)currPointer);
+    currPointer += sizeof(Header);
+    if(h->isMarked()){
+      h->clear();
+    }
+    else{
+      tprintf("Freeing this address @ which has an allocated memory of @ \n",(size_t)currPointer, h->getAllocatedSize());
+    }
+    currPointer += h->getAllocatedSize();
+  }
    
 }
 
