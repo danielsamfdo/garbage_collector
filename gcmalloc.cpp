@@ -198,8 +198,8 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  sp.walkGlobals([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
-  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  //sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr);tprintf("It is allocated : @ pointer \n",h->getAllocatedSize());  });// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
 }
 
