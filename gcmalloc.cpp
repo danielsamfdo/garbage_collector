@@ -3,10 +3,12 @@ static const auto minPowerOfTwoAllowed = 15;
 
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
+    startHeap = SourceHeap::getStart();
     allocatedObjects = nullptr;
     for (auto& f : freedObjects) {
       f = nullptr;
     }
+    initialized = false;
 }
 
 
@@ -15,7 +17,10 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   // If Size is lesser than zero return Null pointer
   if(sz <= 0)
     return nullptr;
-  if(triggerGC(sz)){
+  // if(initialized){
+    
+  // }
+  if(initialized && triggerGC(sz)){
     gc();
   }
   unsigned int headerSize = sizeof(Header);
@@ -33,26 +38,18 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   // Header **HeaderFreelistArray = freedObjects;
   int maxAvailableIndices = Threshold/Base + 15;
   heapLock.lock();
-  
-  // Step 1 : Check if such a free list exists
-  for(int index=sizeClass;index<maxAvailableIndices;index++){ // Runs from size Class to  sizeClass < 1039
-    // When searches happens and blocks need  to be selected only one thread has to take that block. Two or more threads should not have an allocation to a single block
-    // heapLock.lock();
-    if(freedObjects[index]!=nullptr){
-      block = freedObjects[index];
-      if(freedObjects[index]->nextObject != nullptr){
-        freedObjects[index] = freedObjects[index]->nextObject;
-        freedObjects[index]->prevObject = nullptr;
-      }
-      else{
-        freedObjects[index] = nullptr;
-      }
-      BlockAvailable = true;
-      break;
 
+  int index = sizeClass;
+  if(freedObjects[index]!=nullptr){
+    block = freedObjects[index];
+    if(freedObjects[index]->nextObject != nullptr){
+      freedObjects[index] = freedObjects[index]->nextObject;
+      freedObjects[index]->prevObject = nullptr;
     }
-    // heapLock.unlock();
-
+    else{
+      freedObjects[index] = nullptr;
+    }
+    BlockAvailable = true;
   }
 
   if(BlockAvailable){
@@ -62,6 +59,9 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   else{
     // We Need to carefully allocate memory, no two threads can have same memory address ptr
     //http://www.devx.com/tips/Tip/12582
+    objectsAllocated+=1;
+    if(objectsAllocated > 248)
+      initialized = true;
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
   }
@@ -80,9 +80,10 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   }
   block->setCookie();
   heapLock.unlock();
-
+  allocated += allocatedForTheRequest;
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two
   ptr = static_cast<char*>(ptr) + headerSize;
+  endHeap = static_cast<char*>(ptr) + allocatedForTheRequest;
   // http://stackoverflow.com/questions/1898153/how-to-determine-if-memory-is-aligned-testing-for-alignment-not-aligning
   if((((unsigned long)ptr % Alignment) != 0))
     return nullptr; // Memory Alignment Issue
@@ -177,11 +178,11 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
 
 }
   
-  // Indicate whether it is time to trigger a garbage collection
-  // (call this inside your malloc).
-  // Clearly this must happen when the heap is entirely full,
-  // but for performance reasons, you should trigger GCs more frequently
-  // (though not too frequently) using the fields below.
+// Indicate whether it is time to trigger a garbage collection
+// (call this inside your malloc).
+// Clearly this must happen when the heap is entirely full,
+// but for performance reasons, you should trigger GCs more frequently
+// (though not too frequently) using the fields below.
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   // TO DO ADD CONDITIONS
@@ -191,6 +192,10 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
 // Perform a garbage collection pass.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
+  void * st = SourceHeap::getStart();
+  
+  //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
+  //tprintf("Objects Allocated @ \n",objectsAllocated);
   mark();
   sweep();
 }
@@ -198,8 +203,9 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  //sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
-  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr);tprintf("It is allocated : @ pointer \n",h->getAllocatedSize());  });// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  // sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
+  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie()); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
 }
 
@@ -226,5 +232,15 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   // Just returning true is *not* an option :)
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
+  size_t value = (size_t)p;
+  if(startHeap<= p && p<=endHeap)
     return true;
+  return false;
+}
+
+
+// number of bytes currently allocated  
+template <class SourceHeap>
+size_t GCMalloc<SourceHeap>::bytesAllocated() {
+  return allocated;
 }
