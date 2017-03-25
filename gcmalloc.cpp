@@ -193,11 +193,12 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
   void * st = SourceHeap::getStart();
-  
+  inGC = true;
   //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
   //tprintf("Objects Allocated @ \n",objectsAllocated);
   mark();
   sweep();
+  inGC = false;
 }
   
   // Mark all reachable objects.
@@ -205,20 +206,26 @@ template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
   // sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
-  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie()); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
 }
 
 // Mark one object as reachable and recursively mark everything reachable from it.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::markReachable(void * ptr){
-
+  void *p = static_cast<char*>(ptr) - sizeof(Header); 
+  Header *h = static_cast<Header*>(p);
+  if(h->validateCookie()){
+    h->mark();
+    tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
+  }
+  // tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie());
 }
 
 // Reclaim all unreachable objects (add to free lists).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
-
+   
 }
 
 // Free one object.

@@ -28,6 +28,11 @@ int main()
   cout << "p2 should be reachable: " << (size_t) p2 << endl;
   *p1 = p2;
   *p2 = 12;
+  for (int i = 0; i < 2; i++) {
+    char * ptr = (char *) malloc(256);
+  }
+
+  
   // for (int i = 0; i < 200000; i++) {
   //   char * ptr = (char *) malloc(256);
   //   ptr[0] = 'X';
