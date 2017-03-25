@@ -192,19 +192,21 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
 // Perform a garbage collection pass.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
-  void * st = SourceHeap::getStart();
-  inGC = true;
-  //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
-  //tprintf("Objects Allocated @ \n",objectsAllocated);
-  mark();
-  sweep();
-  inGC = false;
+  if(!inGC){
+    void * st = SourceHeap::getStart();
+    inGC = true;
+    //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
+    //tprintf("Objects Allocated @ \n",objectsAllocated);
+    mark();
+    sweep();
+    inGC = false;
+  }
 }
   
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  // sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkGlobals([&](void * p){ });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
   sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
@@ -225,6 +227,17 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
 // Reclaim all unreachable objects (add to free lists).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
+  // void * startPointer = startHeap;
+  // void * endPointer = endHeap;
+  // Header *h = static_cast<Header*>(startPointer);
+  // while(startPointer<=endPointer){
+  //   if(h->isMarked()){
+  //     h->clear();
+  //   }
+  //   else{
+  //     tprintf("Freeing this address @ \n", h-> );
+  //   }
+  // }
    
 }
 
