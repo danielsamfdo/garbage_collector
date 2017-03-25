@@ -184,12 +184,14 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
   // (though not too frequently) using the fields below.
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
+  // TO DO ADD CONDITIONS
   return true;
 }
 
 // Perform a garbage collection pass.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
+  tprintf("Pointer is @\n",1);
   mark();
   sweep();
 }
@@ -197,7 +199,9 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  
+  sp.walkGlobals([&](void * ptr){ tprintf("Pointer is @\n",(size_t)ptr);});
+  sp.walkStack([&](void * ptr){ tprintf("Pointer is @\n",(size_t)ptr);});
+
 }
 
 // Mark one object as reachable and recursively mark everything reachable from it.
