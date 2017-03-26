@@ -21,7 +21,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
 
   if(initialized && triggerGC(sz)){
     if(sz>1000)
-      gc();
+    gc();
   }
   unsigned int headerSize = sizeof(Header);
   
@@ -66,6 +66,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     block = new (ptr) Header;
     // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
     endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
+    bytesAllocatedSinceLastGC +=  allocatedForTheRequest;
     // void * endPointer = (static_cast<char*>(endHeap));
     // tprintf("START HEAP  @\n",(size_t)startHeap);
     // tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
@@ -180,12 +181,13 @@ int constexpr GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
 // Scan through this region of memory looking for pointers to mark (and mark them).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::scan(void * start, void * end){
-  char * start_p = static_cast<char*>(start);
-  char * end_p = static_cast<char*>(end);
-  void ** ptr = (void **) start_p;
-  for(char *i = start_p;i<end_p;i+=8){
-    if(isPointer((void *) *ptr))
-      markReachable((void *) *ptr);
+  const auto startVal = (uintptr_t) start;
+  const auto endVal   = (uintptr_t) end ;
+
+  for (auto ptr = startVal; ptr < endVal; ptr += sizeof(void *)) {
+    void ** p = (void **) ptr;
+    if(isPointer((void *) *p))
+      markReachable((void *) *p);
   }
   // tprintf("SCAN ADDR : @ \n", (size_t)(p));
   // tprintf("SCAN ADDR : @ \n", (size_t)(p));
@@ -199,6 +201,7 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   // TO DO ADD CONDITIONS
+  if(bytesAllocatedSinceLastGC)
   return true;
 }
 
@@ -211,7 +214,7 @@ void GCMalloc<SourceHeap>::gc(){
     //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
     tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
-    // sweep();
+    sweep();
     tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
     inGC = false;
   }
@@ -258,6 +261,8 @@ template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
   Header *iterator = allocatedObjects;
   // tprintf("Doing Sweep\n");
+  // Set Bytes Reclaimed as 0
+  bytesReclaimedLastGC = 0;
   size_t count = 0;
   while(iterator!=nullptr){
     void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
@@ -265,11 +270,12 @@ void GCMalloc<SourceHeap>::sweep(){
     if(!iterator->isMarked()){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
-      tprintf("Freeing at @ \n", (size_t)ptr);
+      // tprintf("Freeing at @ \n", (size_t)ptr);
       objectsAllocated-=1;
+      bytesReclaimedLastGC += h->getAllocatedSize();
       // privateFree(headerToBeFreedPtr);
     }else{
-      tprintf("Not Freeing at @ \n", (size_t)ptr);
+      // tprintf("Not Freeing at @ \n", (size_t)ptr);
       iterator = iterator->nextObject;
       h->clear();
     }
@@ -299,7 +305,6 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   freedObjects[sizeClass] = h;
   tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
   allocated -= h->getAllocatedSize();
-  
 }
 
   // Returns true if the argument looks like a pointer that we allocated.
@@ -307,8 +312,6 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   // Just returning true is *not* an option :)
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
-  size_t value = (size_t)p;
-  // void * st = static_cast<char *>(p) + sizeof(Header);
   if(startHeap<= p && p<=endHeap){
     // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
     return true;

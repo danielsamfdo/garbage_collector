@@ -1,0 +1,14 @@
+What are the other Conditions that can or need to be checked for identifying a pointer assuming that endHeap is updated 
+when a new object is allocated from the SourceHeap
+
+GCMalloc<SourceHeap>::isPointer(void * p){
+  if(startHeap<= p && p<=endHeap){
+    // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
+    return true;
+  }
+  return false;
+}
+
+
+
+bytesAllocatedSinceLastGC -> should be updated based on whenever i get an object from source heap ?
