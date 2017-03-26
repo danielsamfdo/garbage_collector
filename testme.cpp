@@ -65,6 +65,7 @@ int main()
   }
 
   q = q + 4;
+  functionOne();
   // char * p = nullptr;
   // cout << "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
   // cout << "p address = " << (size_t) &p << endl;

@@ -63,11 +63,11 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
       initialized = true;
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
-    tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
+    // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
     endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
     // void * endPointer = (static_cast<char*>(endHeap));
-    tprintf("START HEAP  @\n",(size_t)startHeap);
-    tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
+    // tprintf("START HEAP  @\n",(size_t)startHeap);
+    // tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
   }
 
   // When we are altering links, we need to make sure it is thread safe.
@@ -179,7 +179,10 @@ int constexpr GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
 // Scan through this region of memory looking for pointers to mark (and mark them).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::scan(void * start, void * end){
-
+  char * p = static_cast<char*>(start);
+  // void ** ptr = &p;
+  tprintf("SCAN ADDR : @ \n", (size_t)(p));
+  tprintf("SCAN ADDR : @ \n", (size_t)(p));
 }
   
 // Indicate whether it is time to trigger a garbage collection
@@ -210,6 +213,7 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
+  tprintf("Doing Mark Phase\n");
   sp.walkGlobals([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
   sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
@@ -226,14 +230,18 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
     h = static_cast<Header*>(p);
     if(h->validateCookie())
       break;
-    // ptr = static_cast<char*>(ptr) - 1;
-  }while(false);
+    ptr = static_cast<char*>(ptr) - 1;
+    if(ptr<startHeap || ptr >endHeap)
+      return;
+  }while(true);
   
   if(h->validateCookie() && !h->isMarked()){
-    tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
+    // tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
     
     h->mark();
-    // CALL SCAN
+    void* start = static_cast<char *>((void *)h) + sizeof(Header);
+    void* end = static_cast<char *>((void *)h) + sizeof(Header) + h->getAllocatedSize();
+    scan(start,end);
     //tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
   }
   // tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie());
@@ -248,9 +256,9 @@ void GCMalloc<SourceHeap>::sweep(){
   while(iterator!=nullptr){
     void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
     Header *h = iterator;
-
     if(!iterator->isMarked()){
       tprintf("Freeing at @ \n", (size_t)ptr);
+      tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
       size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
       if(h == allocatedObjects){ // If the free block is the head
         allocatedObjects = allocatedObjects->nextObject;
@@ -269,8 +277,9 @@ void GCMalloc<SourceHeap>::sweep(){
       h->nextObject = freedObjects[sizeClass];
       freedObjects[sizeClass] = h;
       allocated -= h->getAllocatedSize();
+      // privateFree(ptr);
     }else{
-      tprintf("Not Freeing at @ \n", (size_t)ptr);
+      // tprintf("Not Freeing at @ \n", (size_t)ptr);
       iterator = iterator->nextObject;
       h->clear();
     }
@@ -280,7 +289,9 @@ void GCMalloc<SourceHeap>::sweep(){
 // Free one object.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::privateFree(void * p){
-
+  // void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
+  Header *h = static_cast<Header*>(p);
+  
 }
 
   // Returns true if the argument looks like a pointer that we allocated.
