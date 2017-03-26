@@ -210,7 +210,7 @@ void GCMalloc<SourceHeap>::gc(){
     //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
     tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
-    sweep();
+    // sweep();
     tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
     inGC = false;
   }
@@ -243,7 +243,6 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
   
   if(h->validateCookie() && !h->isMarked()){
     tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
-    
     h->mark();
     void* start = static_cast<char *>((void *)h) + sizeof(Header);
     void* end = static_cast<char *>((void *)h) + sizeof(Header) + h->getAllocatedSize();
@@ -308,10 +307,11 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
   size_t value = (size_t)p;
-  void * st = static_cast<char *>(p) + sizeof(Header);
-  // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
-  if(st<= p && p<=endHeap)
+  // void * st = static_cast<char *>(p) + sizeof(Header);
+  if(startHeap<= p && p<=endHeap){
+    // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
     return true;
+  }
   return false;
 }
 
