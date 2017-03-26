@@ -20,7 +20,8 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     return nullptr;
 
   if(initialized && triggerGC(sz)){
-    gc();
+    if(sz>1000)
+      gc();
   }
   unsigned int headerSize = sizeof(Header);
   
