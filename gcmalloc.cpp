@@ -220,9 +220,9 @@ void GCMalloc<SourceHeap>::gc(){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
   // tprintf("Doing Mark Phase\n");
-  sp.walkGlobals([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkGlobals([&](void * p){ if(isPointer(p)){markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
-  sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkStack([&](void * p){ if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
 }
 
@@ -232,17 +232,17 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
   Header *h;
   void *p;
   do{
-    p = static_cast<char*>(ptr) - sizeof(Header); 
+    p = static_cast<char*>(ptr) - sizeof(Header);
     h = static_cast<Header*>(p);
     if(h->validateCookie())
       break;
     ptr = static_cast<char*>(ptr) - 1;
     if(ptr<static_cast<char*>(startHeap)+32 || ptr >endHeap)
       return;
-  }while(false);
+  }while(true);
   
   if(h->validateCookie() && !h->isMarked()){
-    // tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
+    tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
     
     h->mark();
     void* start = static_cast<char *>((void *)h) + sizeof(Header);
@@ -263,28 +263,11 @@ void GCMalloc<SourceHeap>::sweep(){
     void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
     Header *h = iterator;
     if(!iterator->isMarked()){
+      void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
+      iterator = iterator->nextObject;
       tprintf("Freeing at @ \n", (size_t)ptr);
       objectsAllocated-=1;
-      size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
-      if(h == allocatedObjects){ // If the free block is the head
-        allocatedObjects = allocatedObjects->nextObject;
-        iterator = allocatedObjects;
-      }
-      else{ // If the free block is not the head
-          Header *prev = h->prevObject;
-          Header *next = h->nextObject;
-          if(prev)
-            prev->nextObject = next;
-          if(next)
-            next->prevObject = prev;
-          iterator = next;
-        }
-      h->prevObject = nullptr;
-      h->nextObject = freedObjects[sizeClass];
-      freedObjects[sizeClass] = h;
-      tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
-      allocated -= h->getAllocatedSize();
-      // privateFree(ptr);
+      // privateFree(headerToBeFreedPtr);
     }else{
       tprintf("Not Freeing at @ \n", (size_t)ptr);
       iterator = iterator->nextObject;
@@ -298,6 +281,24 @@ template <class SourceHeap>
 void GCMalloc<SourceHeap>::privateFree(void * p){
   // void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
   Header *h = static_cast<Header*>(p);
+  size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
+  if(h == allocatedObjects){ // If the free block is the head
+    allocatedObjects = allocatedObjects->nextObject;
+    // iterator = allocatedObjects;
+  }
+  else{ // If the free block is not the head
+      Header *prev = h->prevObject;
+      Header *next = h->nextObject;
+      if(prev)
+        prev->nextObject = next;
+      if(next)
+        next->prevObject = prev;
+    }
+  h->prevObject = nullptr;
+  h->nextObject = freedObjects[sizeClass];
+  freedObjects[sizeClass] = h;
+  tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
+  allocated -= h->getAllocatedSize();
   
 }
 
@@ -307,9 +308,9 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
   size_t value = (size_t)p;
-  void * t = static_cast<char *>(p);
+  void * st = static_cast<char *>(p) + sizeof(Header);
   // tprintf("checking @ is within @ and @",(size_t)&p, (size_t)&startHeap, (size_t)&endHeap);
-  if(startHeap<= p && p<=endHeap)
+  if(st<= p && p<=endHeap)
     return true;
   return false;
 }
