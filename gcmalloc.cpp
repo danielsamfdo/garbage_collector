@@ -59,8 +59,8 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     // We Need to carefully allocate memory, no two threads can have same memory address ptr
     //http://www.devx.com/tips/Tip/12582
     objectsAllocated+=1;
-    if(objectsAllocated > 248)
-      initialized = true;
+    // if(objectsAllocated > 246)
+    initialized = true;
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
     // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
@@ -179,8 +179,13 @@ int constexpr GCMalloc<SourceHeap>::getSizeClass(size_t sz) {
 // Scan through this region of memory looking for pointers to mark (and mark them).
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::scan(void * start, void * end){
-  char * p = static_cast<char*>(start);
-  // void ** ptr = &p;
+  char * start_p = static_cast<char*>(start);
+  char * end_p = static_cast<char*>(end);
+  void ** ptr = (void **) start_p;
+  for(char *i = start_p;i<end_p;i+=8){
+    if(isPointer((void *) *ptr))
+      markReachable((void *) *ptr);
+  }
   // tprintf("SCAN ADDR : @ \n", (size_t)(p));
   // tprintf("SCAN ADDR : @ \n", (size_t)(p));
 }
@@ -232,9 +237,9 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
     if(h->validateCookie())
       break;
     ptr = static_cast<char*>(ptr) - 1;
-    if(ptr<startHeap || ptr >endHeap)
+    if(ptr<static_cast<char*>(startHeap)+32 || ptr >endHeap)
       return;
-  }while(true);
+  }while(false);
   
   if(h->validateCookie() && !h->isMarked()){
     // tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
