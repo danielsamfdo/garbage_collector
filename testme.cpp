@@ -32,11 +32,11 @@ int main()
   int ** p1 = (int **) malloc(8);
   int * p2 = (int *) malloc(8);
   char * q = (char *) malloc(256);
-  void * p;
-  void * ptr;
-  Header *h;
   strcpy(q, "This should be intact.\n");
   if(true){
+    void * p;
+    void * ptr;
+    Header *h;
     cout<< "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
     // TRIGGER GC CONDITION HAPPENS
     char * q2 = (char *) malloc(128);
@@ -64,8 +64,8 @@ int main()
     // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
   }
 
-  q = q + 4;
-  functionOne();
+  // q = q + 4;
+  // functionOne();
   // char * p = nullptr;
   // cout << "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
   // cout << "p address = " << (size_t) &p << endl;

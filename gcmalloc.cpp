@@ -181,8 +181,8 @@ template <class SourceHeap>
 void GCMalloc<SourceHeap>::scan(void * start, void * end){
   char * p = static_cast<char*>(start);
   // void ** ptr = &p;
-  tprintf("SCAN ADDR : @ \n", (size_t)(p));
-  tprintf("SCAN ADDR : @ \n", (size_t)(p));
+  // tprintf("SCAN ADDR : @ \n", (size_t)(p));
+  // tprintf("SCAN ADDR : @ \n", (size_t)(p));
 }
   
 // Indicate whether it is time to trigger a garbage collection
@@ -203,9 +203,10 @@ void GCMalloc<SourceHeap>::gc(){
     void * st = SourceHeap::getStart();
     inGC = true;
     //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
-    //tprintf("Objects Allocated @ \n",objectsAllocated);
+    tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
     sweep();
+    tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
     inGC = false;
   }
 }
@@ -213,7 +214,7 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  tprintf("Doing Mark Phase\n");
+  // tprintf("Doing Mark Phase\n");
   sp.walkGlobals([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
   sp.walkStack([&](void * p){ void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); if(isPointer(p)){markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
@@ -251,14 +252,14 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
   Header *iterator = allocatedObjects;
-  tprintf("Doing Sweep\n");
+  // tprintf("Doing Sweep\n");
   size_t count = 0;
   while(iterator!=nullptr){
     void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
     Header *h = iterator;
     if(!iterator->isMarked()){
       tprintf("Freeing at @ \n", (size_t)ptr);
-      tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
+      objectsAllocated-=1;
       size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
       if(h == allocatedObjects){ // If the free block is the head
         allocatedObjects = allocatedObjects->nextObject;
@@ -276,10 +277,11 @@ void GCMalloc<SourceHeap>::sweep(){
       h->prevObject = nullptr;
       h->nextObject = freedObjects[sizeClass];
       freedObjects[sizeClass] = h;
+      tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
       allocated -= h->getAllocatedSize();
       // privateFree(ptr);
     }else{
-      // tprintf("Not Freeing at @ \n", (size_t)ptr);
+      tprintf("Not Freeing at @ \n", (size_t)ptr);
       iterator = iterator->nextObject;
       h->clear();
     }
