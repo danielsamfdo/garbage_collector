@@ -1,0 +1,10 @@
+nextGC -> DO SOME UPDATE
+
+Check bytesReclaimedlastGC
+Check bytesAllocatedsincelastGC
+
+Check isPointer - with integer
+
+objectsAllocated - NOT WORKING 
+
+

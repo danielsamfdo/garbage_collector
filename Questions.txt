@@ -12,3 +12,39 @@ GCMalloc<SourceHeap>::isPointer(void * p){
 
 
 bytesAllocatedSinceLastGC -> should be updated based on whenever i get an object from source heap ?
+
+
+Say if i find an access to q
+
+Sweep():
+  Going through Allocated Objects
+    if(something is marked):
+      clear marked objec
+    else:
+      privateFree()
+
+
+
+char  * s  = malloc(100);
+
+s  = s+1000; //within bounds of start and end heap and points to a header on the free list 
+In mark phase we mark it 
+In sweep phase we only go thro allocated Objects
+So that header on free list will never be garbage collected. Is this fine ?
+
+
+int main(){
+void * p;
+if(true){
+  char * m = malloc(256);
+  p = m;
+}
+char * m2 = malloc(1000); // GC is triggered
+// 
+return 0
+}
+
+m is still live right after GC is triggered ???? 
+
+
+

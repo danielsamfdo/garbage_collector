@@ -1,6 +1,6 @@
 static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
-
+static const auto maxNextGC = 1000;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
@@ -10,6 +10,7 @@ GCMalloc<SourceHeap>::GCMalloc(){
       f = nullptr;
     }
     initialized = false;
+    bytesAllocatedSinceLastGC = 0;
 }
 
 
@@ -20,7 +21,6 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     return nullptr;
 
   if(initialized && triggerGC(sz)){
-    if(sz>1000)
     gc();
   }
   unsigned int headerSize = sizeof(Header);
@@ -59,18 +59,22 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   else{
     // We Need to carefully allocate memory, no two threads can have same memory address ptr
     //http://www.devx.com/tips/Tip/12582
-    objectsAllocated+=1;
-    // if(objectsAllocated > 246)
-    initialized = true;
+    if(objectsAllocated > 240){
+      initialized = true;
+      nextGC = maxNextGC;
+    }
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
     // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
     endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
-    bytesAllocatedSinceLastGC +=  allocatedForTheRequest;
     // void * endPointer = (static_cast<char*>(endHeap));
     // tprintf("START HEAP  @\n",(size_t)startHeap);
     // tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
   }
+  objectsAllocated+=1;
+  bytesAllocatedSinceLastGC +=  allocatedForTheRequest;
+  tprintf("objectsAllocated @\n", objectsAllocated);
+
 
   // When we are altering links, we need to make sure it is thread safe.
   if(allocatedObjects==nullptr){
@@ -87,6 +91,9 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   block->setCookie();
   heapLock.unlock();
   allocated += allocatedForTheRequest;
+  if(initialized){
+    nextGC-=allocatedForTheRequest;
+  }
   block->setAllocatedSize(allocatedForTheRequest);
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two
   ptr = static_cast<char*>(ptr) + headerSize;
@@ -201,8 +208,20 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   // TO DO ADD CONDITIONS
-  if(bytesAllocatedSinceLastGC)
-  return true;
+  int sizeClass = GCMalloc<SourceHeap>::getSizeClass(szRequested);
+  if(sizeClass==-1){ // If Unsatisfiable Request Return NULL
+    return false;
+  }
+  tprintf("Trigger GC @: @: Res :@ \n ",bytesReclaimedLastGC, bytesAllocatedSinceLastGC,bytesReclaimedLastGC- bytesAllocatedSinceLastGC);
+  if( (freedObjects[sizeClass]!=nullptr))
+    return true;
+  if((bytesReclaimedLastGC - bytesAllocatedSinceLastGC <= 0 ))
+    return true;
+  if(nextGC<=0){
+    nextGC = maxNextGC;
+    return true;
+  }
+  return false;
 }
 
 // Perform a garbage collection pass.
@@ -216,6 +235,7 @@ void GCMalloc<SourceHeap>::gc(){
     mark();
     sweep();
     tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
+    bytesAllocatedSinceLastGC = 0;
     inGC = false;
   }
 }
@@ -246,7 +266,7 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
   }while(true);
   
   if(h->validateCookie() && !h->isMarked()){
-    tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
+    // tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
     h->mark();
     void* start = static_cast<char *>((void *)h) + sizeof(Header);
     void* end = static_cast<char *>((void *)h) + sizeof(Header) + h->getAllocatedSize();
