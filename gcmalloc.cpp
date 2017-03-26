@@ -4,7 +4,7 @@ static const auto minPowerOfTwoAllowed = 15;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
-    endHeap = static_cast<char *>(SourceHeap::getStart()) + SourceHeap::getRemaining();
+    endHeap = SourceHeap::getStart();// static_cast<char *>(SourceHeap::getStart()) + SourceHeap::getRemaining();
     allocatedObjects = nullptr;
     for (auto& f : freedObjects) {
       f = nullptr;
@@ -18,9 +18,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   // If Size is lesser than zero return Null pointer
   if(sz <= 0)
     return nullptr;
-  // if(initialized){
-    
-  // }
+
   if(initialized && triggerGC(sz)){
     gc();
   }
@@ -65,10 +63,11 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
       initialized = true;
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
-    tprintf("SIze of Header @\n",(size_t) static_cast<char*>(ptr));
-    // endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
+    tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
+    endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
     // void * endPointer = (static_cast<char*>(endHeap));
-    // tprintf("END HEAP UPDATE @\n",(size_t)&endPointer);
+    tprintf("START HEAP  @\n",(size_t)startHeap);
+    tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
   }
 
   // When we are altering links, we need to make sure it is thread safe.
@@ -227,10 +226,12 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
     h = static_cast<Header*>(p);
     if(h->validateCookie())
       break;
-    ptr = static_cast<char*>(ptr) - 1;
-  }while(true);
+    // ptr = static_cast<char*>(ptr) - 1;
+  }while(false);
   
   if(h->validateCookie()){
+    tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
+    
     h->mark();
     // CALL SCAN
     //tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
@@ -244,32 +245,32 @@ void GCMalloc<SourceHeap>::sweep(){
   Header *iterator = allocatedObjects;
   tprintf("Doing Sweep\n");
   // size_t count = 0;
-  while(iterator!=nullptr){
-    if(!iterator->isMarked()){
-      Header *h = iterator;
-      size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
-      if(h == allocatedObjects){ // If the free block is the head
-        allocatedObjects = allocatedObjects->nextObject;
-        iterator = allocatedObjects;
-      }
-      else{ // If the free block is not the head
-          Header *prev = h->prevObject;
-          Header *next = h->nextObject;
-          if(prev)
-            prev->nextObject = next;
-          if(next)
-            next->prevObject = prev;
-          iterator = next;
-        }
-      h->prevObject = nullptr;
-      h->nextObject = freedObjects[sizeClass];
-      freedObjects[sizeClass] = h;
-      heapLock.unlock();
-      allocated -= h->getAllocatedSize();
-    }else{
-      iterator = iterator->nextObject;
-    }
-  }
+  // while(iterator!=nullptr){
+  //   if(!iterator->isMarked()){
+  //     Header *h = iterator;
+  //     size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
+  //     if(h == allocatedObjects){ // If the free block is the head
+  //       allocatedObjects = allocatedObjects->nextObject;
+  //       iterator = allocatedObjects;
+  //     }
+  //     else{ // If the free block is not the head
+  //         Header *prev = h->prevObject;
+  //         Header *next = h->nextObject;
+  //         if(prev)
+  //           prev->nextObject = next;
+  //         if(next)
+  //           next->prevObject = prev;
+  //         iterator = next;
+  //       }
+  //     h->prevObject = nullptr;
+  //     h->nextObject = freedObjects[sizeClass];
+  //     freedObjects[sizeClass] = h;
+  //     heapLock.unlock();
+  //     allocated -= h->getAllocatedSize();
+  //   }else{
+  //     iterator = iterator->nextObject;
+  //   }
+  // }
 }
 
 // Free one object.

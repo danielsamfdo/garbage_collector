@@ -3,7 +3,7 @@
 using namespace std;
 
 
-//#include "gcmalloc.hh"
+#include "gcmalloc.hh"
 extern "C"
 {
   //  void * xxmalloc(size_t);
@@ -19,19 +19,42 @@ int main()
   int ** p1 = (int **) malloc(8);
   int * p2 = (int *) malloc(8);
   char * q = (char *) malloc(256);
+  void * p;
+  void * ptr;
+  Header *h;
   strcpy(q, "This should be intact.\n");
-  q = q + 4;
-  char * p = nullptr;
-  cout << "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
-  cout << "p address = " << (size_t) &p << endl;
-  cout << "p1 should be reachable: " << (size_t) p1 << endl;
-  cout << "p2 should be reachable: " << (size_t) p2 << endl;
-  *p1 = p2;
-  *p2 = 12;
-  for (int i = 0; i < 2; i++) {
-    char * ptr = (char *) malloc(256);
-    cout << "ptr should not be reachable: Address" << (size_t) ptr << endl;
+  if(true){
+    cout<< "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
+    // TRIGGER GC CONDITION HAPPENS
+    char * q2 = (char *) malloc(16);
+    p = p1;
+    ptr = static_cast<char*>(p) - sizeof(Header);
+    h = static_cast<Header*>(ptr);
+    cout<< "Header h for the pointer p1 is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+    
+    p = p2;
+    ptr = static_cast<char*>(p) - sizeof(Header);
+    h = static_cast<Header*>(ptr);
+    cout<< "Header h for the pointer p2 is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+
+    p = q; 
+    ptr = static_cast<char*>(p) - sizeof(Header);
+    h = static_cast<Header*>(ptr);
+    cout<< "Header h for the pointer q is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+
   }
+  q = q + 4;
+  // char * p = nullptr;
+  // cout << "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
+  // cout << "p address = " << (size_t) &p << endl;
+  // cout << "p1 should be reachable: " << (size_t) p1 << endl;
+  // cout << "p2 should be reachable: " << (size_t) p2 << endl;
+  // *p1 = p2;
+  // *p2 = 12;
+  // for (int i = 0; i < 2; i++) {
+  //   char * ptr = (char *) malloc(256);
+  //   cout << "ptr should not be reachable: Address" << (size_t) ptr << endl;
+  // }
 
   
   // for (int i = 0; i < 200000; i++) {
