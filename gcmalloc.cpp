@@ -254,18 +254,24 @@ void GCMalloc<SourceHeap>::mark(){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::markReachable(void * ptr){
   Header *h;
+
   void *p;
-  do{
+  void * startval = (void*)(static_cast<char*>(startHeap)+sizeof(Header));
+  void * endval = endHeap;
+  bool foundHeader = false;
+  while(ptr>=startval && ptr<endval){
     p = static_cast<char*>(ptr) - sizeof(Header);
     h = static_cast<Header*>(p);
-    if(h->validateCookie())
+    if(h->validateCookie()){
+      foundHeader = true;
       break;
+    }
     ptr = static_cast<char*>(ptr) - 1;
-    if(ptr<static_cast<char*>(startHeap)+32 || ptr >endHeap)
+  }
+  if(!foundHeader)
       return;
-  }while(true);
   
-  if(h->validateCookie() && !h->isMarked()){
+  if(!h->isMarked()){
     // tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
     h->mark();
     void* start = static_cast<char *>((void *)h) + sizeof(Header);
