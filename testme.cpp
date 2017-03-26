@@ -12,6 +12,19 @@ extern "C"
 
 int testme;
 
+void functionOne(){
+  cout << "--------------------------------------------------" << endl;
+  char * t = (char *) malloc(128);
+  void * p;
+  void * ptr;
+  Header *h;
+  cout<< " New Variable with same requirements(16) Address : " << (size_t) t <<endl;
+  ptr = static_cast<char*>(t) - sizeof(Header);
+  h = static_cast<Header*>(ptr);
+  cout<< "Header h for the pointer p2 " << (size_t) t << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+
+}
+
 int main()
 {
   cout << (size_t) &testme << endl;
@@ -26,23 +39,31 @@ int main()
   if(true){
     cout<< "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
     // TRIGGER GC CONDITION HAPPENS
-    char * q2 = (char *) malloc(16);
+    char * q2 = (char *) malloc(128);
     p = p1;
     ptr = static_cast<char*>(p) - sizeof(Header);
     h = static_cast<Header*>(ptr);
-    cout<< "Header h for the pointer p1 is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+    cout<< "Header h for the pointer p1 " << (size_t) &p1 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
     
     p = p2;
     ptr = static_cast<char*>(p) - sizeof(Header);
     h = static_cast<Header*>(ptr);
-    cout<< "Header h for the pointer p2 is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+    cout<< "Header h for the pointer p2 " << (size_t) &p2 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
 
     p = q; 
     ptr = static_cast<char*>(p) - sizeof(Header);
     h = static_cast<Header*>(ptr);
-    cout<< "Header h for the pointer q is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+    cout<< "Header h for the pointer q " << (size_t) &p1 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
+
+    cout<< " Old Variable with requirements(16) Address : " << (size_t) q2 <<endl;
 
   }
+  if(true){
+    functionOne();
+    functionOne();
+    // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
+  }
+
   q = q + 4;
   // char * p = nullptr;
   // cout << "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;

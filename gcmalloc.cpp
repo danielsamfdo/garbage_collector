@@ -229,7 +229,7 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
     // ptr = static_cast<char*>(ptr) - 1;
   }while(false);
   
-  if(h->validateCookie()){
+  if(h->validateCookie() && !h->isMarked()){
     tprintf("Marked Object, Requested Size @ , Address: @\n",(size_t)h->getAllocatedSize(),(size_t)ptr);
     
     h->mark();
@@ -244,33 +244,37 @@ template <class SourceHeap>
 void GCMalloc<SourceHeap>::sweep(){
   Header *iterator = allocatedObjects;
   tprintf("Doing Sweep\n");
-  // size_t count = 0;
-  // while(iterator!=nullptr){
-  //   if(!iterator->isMarked()){
-  //     Header *h = iterator;
-  //     size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
-  //     if(h == allocatedObjects){ // If the free block is the head
-  //       allocatedObjects = allocatedObjects->nextObject;
-  //       iterator = allocatedObjects;
-  //     }
-  //     else{ // If the free block is not the head
-  //         Header *prev = h->prevObject;
-  //         Header *next = h->nextObject;
-  //         if(prev)
-  //           prev->nextObject = next;
-  //         if(next)
-  //           next->prevObject = prev;
-  //         iterator = next;
-  //       }
-  //     h->prevObject = nullptr;
-  //     h->nextObject = freedObjects[sizeClass];
-  //     freedObjects[sizeClass] = h;
-  //     heapLock.unlock();
-  //     allocated -= h->getAllocatedSize();
-  //   }else{
-  //     iterator = iterator->nextObject;
-  //   }
-  // }
+  size_t count = 0;
+  while(iterator!=nullptr){
+    void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
+    Header *h = iterator;
+
+    if(!iterator->isMarked()){
+      tprintf("Freeing at @ \n", (size_t)ptr);
+      size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
+      if(h == allocatedObjects){ // If the free block is the head
+        allocatedObjects = allocatedObjects->nextObject;
+        iterator = allocatedObjects;
+      }
+      else{ // If the free block is not the head
+          Header *prev = h->prevObject;
+          Header *next = h->nextObject;
+          if(prev)
+            prev->nextObject = next;
+          if(next)
+            next->prevObject = prev;
+          iterator = next;
+        }
+      h->prevObject = nullptr;
+      h->nextObject = freedObjects[sizeClass];
+      freedObjects[sizeClass] = h;
+      allocated -= h->getAllocatedSize();
+    }else{
+      tprintf("Not Freeing at @ \n", (size_t)ptr);
+      iterator = iterator->nextObject;
+      h->clear();
+    }
+  }
 }
 
 // Free one object.
