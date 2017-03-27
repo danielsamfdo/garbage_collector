@@ -1,7 +1,7 @@
 #include<assert.h>
 static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
-static const long maxNextGC = 100000;
+static const long maxNextGC = 10000;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
@@ -95,7 +95,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   heapLock.unlock();
   allocated += allocatedForTheRequest;
   // if(initialized){
-    // tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
+  tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
   //   nextGC = nextGC - allocatedForTheRequest;
   // }
   nextGC = nextGC - allocatedForTheRequest;
@@ -222,7 +222,7 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
     return false;
   if(nextGC <=0){
     nextGC = maxNextGC;
-    // tprintf("Trigger GC C: 1 \n");
+    tprintf("Trigger GC C: 1 \n");
     return true;
   }
   
@@ -302,13 +302,14 @@ void GCMalloc<SourceHeap>::sweep(){
   // Set Bytes Reclaimed as 0
   bytesReclaimedLastGC = 0;
   size_t count = 0;
+  void * ptr;
   while(iterator!=nullptr){
-    void * ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
+    ptr = static_cast<char *>((void *)iterator)+sizeof(Header);
     Header *h = iterator;
     if(!iterator->isMarked()){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
-      // tprintf("Freeing at @ \n", (size_t)ptr);
+      tprintf("Freeing at @ \n", (size_t)ptr);
       bytesReclaimedLastGC += h->getAllocatedSize();
       privateFree(headerToBeFreedPtr);
     }else{
