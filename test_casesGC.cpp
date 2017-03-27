@@ -10,7 +10,7 @@ public:
   Node * prevObject;
   Node * nextObject;
 };
-
+#include "tprintf.hh"
 
 #include "gcmalloc.hh"
 extern "C"
@@ -20,13 +20,22 @@ extern "C"
   //  void xxfree(void *);
 }
 
-Header * addObject(){
-  Header * h = (Header *) malloc(sizeof(Header));
+Node * addObject(){
+  Node * h = (Node *) malloc(sizeof(Node));
+  h->prevObject = nullptr;
+  h->nextObject = nullptr;
   return h;
 }
 
 void testCaseGarbageFour(){
-
+  Node * h = (Node*)malloc(sizeof(Node));
+  Node * it = h;
+  int i;
+  while(i<=100){
+    it->nextObject = addObject();
+    it = it->nextObject;
+    i++;
+  }
 }
 
 void functionOne(){
@@ -92,9 +101,9 @@ void testCaseLivenessOne(){
   // check if Object is still live
   void * p;
   if(true){
-  char * m = (char *)malloc(maxNextGC);
-  p = m;
-  strcpy(m, "m : This should be intact.\n");
+    char * m = (char *)malloc(maxNextGC);
+    p = m;
+    strcpy(m, "m : This should be intact.\n");
   }
   char * m2 = (char *)malloc(maxNextGC); // GC is triggered
   strcpy(m2, "m2 : This should be intact.\n");
@@ -167,6 +176,24 @@ void testLivenessThree(){
 
 }
 
+void testGarbageFour(){
+  int * t = (int  *) malloc(512);
+  tprintf( "Address of ptr t1 @ \n ",(size_t)t);
+  t = (int  *) malloc(512);
+  tprintf( "Address of ptr t2 @ \n ",(size_t)t);
+  t = (int  *) malloc(512);
+  tprintf( "Address of ptr t3 @ \n ",(size_t)t);
+  t = (int  *) malloc(512);
+  tprintf( "Address of ptr t @ \n ",(size_t)t);
+  gc();
+  int *t1 = (int  *) malloc(512);
+  tprintf( "Address of ptr t1 @ \n ",(size_t)t1);
+  int *t2 = (int  *) malloc(512);
+  tprintf( "Address of ptr t2 @ \n ",(size_t)t2);
+  int *t3 = (int  *) malloc(512);
+  tprintf( "Address of ptr t3 @ \n ",(size_t)t3);
+}
+
 void testGarbageThree(){
   cout << "----------- Garbage TEST CASE 3 -----------" << endl;
   ptrRet512();
@@ -215,6 +242,7 @@ int main()
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
   testCaseGarbageOne();
+  testGarbageFour();
   // cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
   // testGlobalsStillPresent();
   // Header *h = (Header *)malloc(sizeof(Header));
