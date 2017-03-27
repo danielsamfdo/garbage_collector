@@ -14,6 +14,7 @@ GCMalloc<SourceHeap>::GCMalloc(){
     initialized = false;
     bytesAllocatedSinceLastGC = 0;
     nextGC = maxNextGC;
+    tprintf("Max heap Mem Allowed : @ ", SourceHeap::getRemaining());
     maxHeapMemoryAllowed = SourceHeap::getRemaining();
 }
 

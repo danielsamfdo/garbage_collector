@@ -35,7 +35,7 @@ void funcCall(){
 
 
 int testme2;
-static const auto maxNextGC = 10000;
+static const auto maxNextGC = 1073741824/64;
 int * testme = (int *)malloc(maxNextGC);
 
 void testGlobalsStillPresent(){
@@ -117,7 +117,6 @@ void testCaseLivenessTwo(){
     s+=256;
   }
 
-  
   void * ptr;
   Header *h;
   ptr = ((char *)(p)) - offset - sizeof(Header);
@@ -133,6 +132,35 @@ void testCaseLivenessTwo(){
 
 }
 
+int * ptrRet512(){
+  int * t = (int  *) malloc(512);
+  cout << "Address of ptr 512 "<<(size_t)t <<endl;
+  return t;
+}
+
+void testLivenessThree(){
+  int * p = ptrRet512();
+  void *ptr = ((char*)((void *)p)) - sizeof(Header);
+  Header *h = (Header *)(ptr);
+  cout << "Address of ptr 512 "<<(size_t)p <<endl;
+  assert(h->validateCookie());
+  assert(h->isMarked()==false);
+
+}
+
+void testGarbageThree(){
+  ptrRet512();
+  size_t s = 0;
+  while(s<=maxNextGC){
+    char * q2 = (char *)malloc(10000); 
+    strcpy(q2, "GC : This should be intact.\n");
+    // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+    s+=10000;
+  }
+  char * outScp = (char *) malloc(512);
+  cout << "Address of outScp is ::: " << (size_t) outScp << endl;
+}
+
 void testCaseGarbageOne(){
   cout << "----------- Garbage TEST CASE 1 -----------" << endl;
 
@@ -141,10 +169,10 @@ void testCaseGarbageOne(){
   }
   size_t s = 0;
   while(s<=maxNextGC){
-    char * q2 = (char *)malloc(256); 
+    char * q2 = (char *)malloc(10000); 
     strcpy(q2, "GC : This should be intact.\n");
-    cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
-    s+=256;
+    // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+    s+=10000;
   }
   char * outScp = (char *) malloc(256);
   cout << "Address of outScp is ::: " << (size_t) outScp << endl;
@@ -152,12 +180,31 @@ void testCaseGarbageOne(){
 
 }
 
+// void testCaseGarbageTwo(){
+//   cout << "----------- Garbage TEST CASE 2 -----------" << endl;
+
+//   if(true){
+//     funcCall();
+//   }
+//   size_t s = 0;
+//   while(s<=maxNextGC){
+//     char * q2 = (char *)malloc(10000); 
+//     strcpy(q2, "GC : This should be intact.\n");
+//     // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+//     s+=10000;
+//   }
+//   char * outScp = (char *) malloc(256);
+//   cout << "Address of outScp is ::: " << (size_t) outScp << endl;
+//   cout << "----------- Garbage TEST CASE 1 END -----------" << endl;
+
+// }
+
 int main()
 {
 
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
-  testCaseGarbageOne();
+  // testCaseGarbageOne();
   cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
   testGlobalsStillPresent();
   Header *h = (Header *)malloc(sizeof(Header));
@@ -172,8 +219,8 @@ int main()
   }
 
   cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
-  testCaseLivenessOne();
-  testCaseLivenessTwo();
+  // testCaseLivenessOne();
+  // testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);
   // int * p2 = (int *) malloc(8);
   // Header *h1 = (Header *)malloc(sizeof(Header));
