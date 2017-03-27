@@ -2,6 +2,7 @@
 static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
 static const long maxNextGC = 10000;
+size_t maxHeapMemoryAllowed;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
@@ -13,6 +14,7 @@ GCMalloc<SourceHeap>::GCMalloc(){
     initialized = false;
     bytesAllocatedSinceLastGC = 0;
     nextGC = maxNextGC;
+    maxHeapMemoryAllowed = SourceHeap::getRemaining();
 }
 
 
@@ -53,15 +55,17 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     BlockAvailable = true;
   }
 
-  tprintf("Objects Allocated :: @\n", objectsAllocated);
+  // tprintf("Objects Allocated :: @\n", objectsAllocated);
   if(BlockAvailable){
     ptr = block;
     // YOU DONT NEED TO CHANGE BLOCKS ALLOCATED SIZE;
   }
   else{
     if(objectsAllocated > 150 || nextGC <=0){ // Initializing GC after allocating 100 objects 
-      if(!initialized)
+      if(!initialized){
+
         nextGC = maxNextGC;
+      }
       initialized = true;
     }
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
@@ -93,7 +97,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   heapLock.unlock();
   allocated += allocatedForTheRequest;
   // if(initialized){
-  tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
+  // tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
     // nextGC = nextGC - allocatedForTheRequest;
   // }
   nextGC = nextGC - allocatedForTheRequest;
@@ -210,12 +214,16 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   }
   
   if( (freedObjects[sizeClass]!=nullptr)){
-    tprintf("Freed Object Found - Not triggering GC\n");
+    // tprintf("Freed Object Found - Not triggering GC\n");
     return false;
   }
+  if((bytesAllocatedSinceLastGC - bytesReclaimedLastGC > (maxHeapMemoryAllowed/8) ) && ((maxHeapMemoryAllowed/3) < allocated)){
+    tprintf("Trigger GC because of large size of Allocated and bytes reclaimed might have been used. \n");
+    return true;
+  }
   if(nextGC <=0){
-    nextGC = maxNextGC;
-    tprintf("Trigger GC C: 1 \n");
+    nextGC = maxHeapMemoryAllowed/64;
+    tprintf("Trigger GC because of nextGC \n");
     return true;
   }
   
@@ -244,9 +252,9 @@ void GCMalloc<SourceHeap>::gc(){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
   // tprintf("Doing Mark Phase\n");
-  sp.walkGlobals([&](void * p){ if(isPointer(p)){tprintf("Addressess from walk Globals : @\n", (size_t) p); markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkGlobals([&](void * p){ if(isPointer(p)){ markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
   // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
-  sp.walkStack([&](void * p){ if(isPointer(p)){ tprintf("Addressess from walk Stack : @\n", (size_t) p); markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
+  sp.walkStack([&](void * p){ if(isPointer(p)){ markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
 
 }
 
@@ -297,7 +305,7 @@ void GCMalloc<SourceHeap>::sweep(){
     if(!iterator->isMarked()){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
-      tprintf("Freeing at @ \n", (size_t)ptr);
+      // tprintf("Freeing at @ \n", (size_t)ptr);
       bytesReclaimedLastGC += h->getAllocatedSize();
       privateFree(headerToBeFreedPtr);
     }else{

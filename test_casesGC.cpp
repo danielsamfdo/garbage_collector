@@ -158,22 +158,22 @@ int main()
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
   testCaseGarbageOne();
-  // cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
-  // testGlobalsStillPresent();
-  // Header *h = (Header *)malloc(sizeof(Header));
+  cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
+  testGlobalsStillPresent();
+  Header *h = (Header *)malloc(sizeof(Header));
 
-  // if(true){
-  //   // functionTwo(h);
-  //   char * t2 = (char *) malloc(maxNextGC);
-  //   char * testOther = (char *) malloc(maxNextGC);
-  //   // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
-  //   cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
-  //   // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
-  // }
+  if(true){
+    // functionTwo(h);
+    char * t2 = (char *) malloc(maxNextGC);
+    char * testOther = (char *) malloc(maxNextGC);
+    // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
+    cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
+    // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
+  }
 
-  // cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
-  // testCaseLivenessOne();
-  // testCaseLivenessTwo();
+  cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
+  testCaseLivenessOne();
+  testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);
   // int * p2 = (int *) malloc(8);
   // Header *h1 = (Header *)malloc(sizeof(Header));
