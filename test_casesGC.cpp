@@ -7,6 +7,7 @@ using namespace std;
 #include "gcmalloc.hh"
 extern "C"
 {
+  void gc();
   //  void * xxmalloc(size_t);
   //  void xxfree(void *);
 }
@@ -167,14 +168,16 @@ void testCaseGarbageOne(){
   if(true){
     funcCall();
   }
-  size_t s = 0;
-  while(s<=maxNextGC){
-    char * q2 = (char *)malloc(10000); 
-    strcpy(q2, "GC : This should be intact.\n");
-    // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
-    s+=10000;
-  }
-  char * outScp = (char *) malloc(256);
+  // size_t s = 0;
+  // while(s<=maxNextGC){
+  //   char * q2 = (char *)malloc(10000); 
+  //   strcpy(q2, "GC : This should be intact.\n");
+  //   // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+  //   s+=10000;
+  // }
+  gc();
+  char * outScp = (char *) malloc(256);;//(char *) malloc(256);
+  
   cout << "Address of outScp is ::: " << (size_t) outScp << endl;
   cout << "----------- Garbage TEST CASE 1 END -----------" << endl;
 

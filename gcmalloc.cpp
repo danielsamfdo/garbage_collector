@@ -209,6 +209,7 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   // TO DO ADD CONDITIONS
+  return false;
   int sizeClass = GCMalloc<SourceHeap>::getSizeClass(szRequested);
   if(sizeClass==-1){ // If Unsatisfiable Request Return NULL
     return false;
@@ -306,7 +307,7 @@ void GCMalloc<SourceHeap>::sweep(){
     if(!iterator->isMarked()){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
-      // tprintf("Freeing at @ \n", (size_t)ptr);
+      tprintf("Freeing at @ \n", (size_t)ptr);
       bytesReclaimedLastGC += h->getAllocatedSize();
       privateFree(headerToBeFreedPtr);
     }else{

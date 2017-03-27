@@ -82,6 +82,9 @@ public:
   // Return the size class for a given size.
   static int constexpr getSizeClass(size_t sz);
 
+  // Perform a garbage collection pass.
+  void gc();
+
 private:
 
   // Scan through this region of memory looking for pointers to mark (and mark them).
@@ -94,8 +97,7 @@ private:
   // (though not too frequently) using the fields below.
   bool triggerGC(size_t szRequested);
 
-  // Perform a garbage collection pass.
-  void gc();
+  
   
   // Mark all reachable objects.
   void mark();
