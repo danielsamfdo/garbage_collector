@@ -28,7 +28,8 @@ void funcCall(){
   cout << " -------------- LOCAL BLOCK START ---------------------- " << endl;
   char * inScp = (char *) malloc(256);
   cout << "Address of inScp is ::: " << (size_t) inScp << endl;
-  strcpy(inScp, "inScp : This should be intact.\n");
+  // strcpy(inScp, "inScp : This should be intact.\n");
+  // inScp=nullptr;
   cout << " -------------- LOCAL BLOCK END ---------------------- " << endl;
 }
 
