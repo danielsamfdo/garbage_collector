@@ -1,10 +1,10 @@
-nextGC -> DO SOME UPDATE
+nextGC -> DO SOME UPDATE - DONE
 
-Check bytesReclaimedlastGC
-Check bytesAllocatedsincelastGC
+Check bytesReclaimedlastGC - DONE
+Check bytesAllocatedsincelastGC - DONE
 
-Check isPointer - with integer
+Check isPointer - DONE
 
-objectsAllocated - NOT WORKING 
+objectsAllocated - DONE
 
 

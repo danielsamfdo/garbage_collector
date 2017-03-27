@@ -1,6 +1,7 @@
+#include<assert.h>
 static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
-static const auto maxNextGC = 1000;
+static const long maxNextGC = 100000;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
     startHeap = SourceHeap::getStart();
@@ -16,6 +17,7 @@ GCMalloc<SourceHeap>::GCMalloc(){
 
 template <class SourceHeap>
 void * GCMalloc<SourceHeap>::malloc(size_t sz) {
+  // tprintf("Max Next GC : @\n",nextGC);
   // If Size is lesser than zero return Null pointer
   if(sz <= 0)
     return nullptr;
@@ -60,8 +62,9 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     // We Need to carefully allocate memory, no two threads can have same memory address ptr
     //http://www.devx.com/tips/Tip/12582
     if(objectsAllocated > 240){
+      if(!initialized)
+        nextGC = maxNextGC;
       initialized = true;
-      nextGC = maxNextGC;
     }
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
@@ -73,7 +76,7 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   }
   objectsAllocated+=1;
   bytesAllocatedSinceLastGC +=  allocatedForTheRequest;
-  tprintf("objectsAllocated @\n", objectsAllocated);
+  // tprintf("objectsAllocated @\n", objectsAllocated);
 
 
   // When we are altering links, we need to make sure it is thread safe.
@@ -91,9 +94,11 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   block->setCookie();
   heapLock.unlock();
   allocated += allocatedForTheRequest;
-  if(initialized){
-    nextGC-=allocatedForTheRequest;
-  }
+  // if(initialized){
+    // tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
+  //   nextGC = nextGC - allocatedForTheRequest;
+  // }
+  nextGC = nextGC - allocatedForTheRequest;
   block->setAllocatedSize(allocatedForTheRequest);
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two
   ptr = static_cast<char*>(ptr) + headerSize;
@@ -212,15 +217,20 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   if(sizeClass==-1){ // If Unsatisfiable Request Return NULL
     return false;
   }
-  tprintf("Trigger GC @: @: Res :@ \n ",bytesReclaimedLastGC, bytesAllocatedSinceLastGC,bytesReclaimedLastGC- bytesAllocatedSinceLastGC);
+  // tprintf("Trigger GC @: @: Res :@ \n ",bytesReclaimedLastGC, bytesAllocatedSinceLastGC,bytesReclaimedLastGC- bytesAllocatedSinceLastGC);
   if( (freedObjects[sizeClass]!=nullptr))
-    return true;
-  if((bytesReclaimedLastGC - bytesAllocatedSinceLastGC <= 0 ))
-    return true;
-  if(nextGC<=0){
+    return false;
+  if(nextGC <=0){
     nextGC = maxNextGC;
+    // tprintf("Trigger GC C: 1 \n");
     return true;
   }
+  
+  // if((bytesReclaimedLastGC - bytesAllocatedSinceLastGC <= 0 )){
+  //   tprintf("Trigger GC C: 2 \n");
+  //   return true;
+  // }
+  
   return false;
 }
 
@@ -231,10 +241,12 @@ void GCMalloc<SourceHeap>::gc(){
     void * st = SourceHeap::getStart();
     inGC = true;
     //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
+    tprintf("Bytes Allocated B4 this GC : @\n",bytesAllocatedSinceLastGC);
     tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
     sweep();
     tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
+    tprintf("Bytes Reclaimed For this GC : @\n",bytesReclaimedLastGC);
     bytesAllocatedSinceLastGC = 0;
     inGC = false;
   }
@@ -297,9 +309,8 @@ void GCMalloc<SourceHeap>::sweep(){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
       // tprintf("Freeing at @ \n", (size_t)ptr);
-      objectsAllocated-=1;
       bytesReclaimedLastGC += h->getAllocatedSize();
-      // privateFree(headerToBeFreedPtr);
+      privateFree(headerToBeFreedPtr);
     }else{
       // tprintf("Not Freeing at @ \n", (size_t)ptr);
       iterator = iterator->nextObject;
@@ -311,8 +322,10 @@ void GCMalloc<SourceHeap>::sweep(){
 // Free one object.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::privateFree(void * p){
-  // void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
+  void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
+  // tprintf("Freeing ADDRESS  :  @ \n", (size_t) ptr);
   Header *h = static_cast<Header*>(p);
+  assert(h->validateCookie());
   size_t sizeClass = GCMalloc<SourceHeap>::getSizeClass(h->getAllocatedSize());
   if(h == allocatedObjects){ // If the free block is the head
     allocatedObjects = allocatedObjects->nextObject;
@@ -329,7 +342,10 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   h->prevObject = nullptr;
   h->nextObject = freedObjects[sizeClass];
   freedObjects[sizeClass] = h;
-  tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
+  objectsAllocated-=1;
+  assert(objectsAllocated>=0);
+  assert((h->validateCookie()));
+  // tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
   allocated -= h->getAllocatedSize();
 }
 
