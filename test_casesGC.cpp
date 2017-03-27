@@ -24,6 +24,14 @@ void functionOne(){
 }
 
 
+void funcCall(){
+  cout << " -------------- LOCAL BLOCK START ---------------------- " << endl;
+  char * inScp = (char *) malloc(256);
+  cout << "Address of inScp is ::: " << (size_t) inScp << endl;
+  strcpy(inScp, "inScp : This should be intact.\n");
+  cout << " -------------- LOCAL BLOCK END ---------------------- " << endl;
+}
+
 
 int testme2;
 static const auto maxNextGC = 10000;
@@ -35,21 +43,17 @@ void testGlobalsStillPresent(){
   cout<< (size_t)testme <<endl;
   *t = 5000;
   assert(*testme == 5000);
+  char * t3 = (char *) malloc(maxNextGC);
   char * t4 = (char *) malloc(maxNextGC); //Trigger GC
-  // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
-  // char * t4 = (char *) malloc(maxNextGC+1); //Trigger GC
-  cout<< " Address of t4 " << t4 << endl;
-  // strcpy(t2, "This should be intact.\n");
-  // strcpy(t3, "This should be intact.\n");
+  cout<< " Address of t3 " << (size_t)t3 << endl;
+  cout<< " Address of t4 " << (size_t)t4 << endl;
   strcpy(t4, "This should be intact.\n");
   void * p;
   void * ptr;
   Header *h;
   ptr = ((char *)((void *)testme)) - sizeof(Header);
-  cout<< (size_t)t <<endl;
   h = static_cast<Header*>(ptr);
-  cout<<"COOKIE"<<endl;
-  cout<< h->validateCookie()<<endl;  assert(h->isMarked()==false);
+  assert(h->isMarked()==false);
   assert(h->validateCookie()==true);
   assert(*testme == 5000);//Value is Unchanged and not Garbage Collected
   cout << "--------------------------------------------------" << endl;
@@ -86,7 +90,6 @@ void testCaseLivenessOne(){
   h = static_cast<Header*>(ptr);
   assert(h->validateCookie()==true);
   assert(h->getAllocatedSize()==maxNextGC);
-  assert(*testme == 5000);
   // 
 
 }
@@ -129,23 +132,47 @@ void testCaseLivenessTwo(){
 
 }
 
+void testCaseGarbageOne(){
+  cout << "----------- Garbage TEST CASE 1 -----------" << endl;
+
+  if(true){
+    funcCall();
+  }
+  size_t s = 0;
+  while(s<=maxNextGC){
+    char * q2 = (char *)malloc(256); 
+    strcpy(q2, "GC : This should be intact.\n");
+    cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+    s+=256;
+  }
+  char * outScp = (char *) malloc(256);
+  cout << "Address of outScp is ::: " << (size_t) outScp << endl;
+  cout << "----------- Garbage TEST CASE 1 END -----------" << endl;
+
+}
+
 int main()
 {
 
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
+  testCaseGarbageOne();
+  // cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
   // testGlobalsStillPresent();
   // Header *h = (Header *)malloc(sizeof(Header));
 
   // if(true){
   //   // functionTwo(h);
   //   char * t2 = (char *) malloc(maxNextGC);
+  //   char * testOther = (char *) malloc(maxNextGC);
   //   // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
   //   cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
   //   // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
   // }
+
+  // cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
   // testCaseLivenessOne();
-  testCaseLivenessTwo();
+  // testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);
   // int * p2 = (int *) malloc(8);
   // Header *h1 = (Header *)malloc(sizeof(Header));
