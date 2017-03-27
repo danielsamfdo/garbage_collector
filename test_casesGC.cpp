@@ -2,6 +2,14 @@
 #include <cstring>
 #include <assert.h>
 using namespace std;
+class Node {
+private:
+  size_t number;  // magic number at the start of every object
+public:
+  // prev and next objects, whether allocated or freed.
+  Node * prevObject;
+  Node * nextObject;
+};
 
 
 #include "gcmalloc.hh"
@@ -11,6 +19,16 @@ extern "C"
   //  void * xxmalloc(size_t);
   //  void xxfree(void *);
 }
+
+Header * addObject(){
+  Header * h = (Header *) malloc(sizeof(Header));
+  return h;
+}
+
+void testCaseGarbageFour(){
+
+}
+
 void functionOne(){
   cout << "--------------------------------------------------" << endl;
   char * t = (char *) malloc(2000);
@@ -150,16 +168,13 @@ void testLivenessThree(){
 }
 
 void testGarbageThree(){
+  cout << "----------- Garbage TEST CASE 3 -----------" << endl;
   ptrRet512();
   size_t s = 0;
-  while(s<=maxNextGC){
-    char * q2 = (char *)malloc(10000); 
-    strcpy(q2, "GC : This should be intact.\n");
-    // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
-    s+=10000;
-  }
+  gc();
   char * outScp = (char *) malloc(512);
   cout << "Address of outScp is ::: " << (size_t) outScp << endl;
+  cout << "----------- Garbage TEST CASE 3 END -----------" << endl;
 }
 
 void testCaseGarbageOne(){
@@ -168,13 +183,6 @@ void testCaseGarbageOne(){
   if(true){
     funcCall();
   }
-  // size_t s = 0;
-  // while(s<=maxNextGC){
-  //   char * q2 = (char *)malloc(10000); 
-  //   strcpy(q2, "GC : This should be intact.\n");
-  //   // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
-  //   s+=10000;
-  // }
   gc();
   char * outScp = (char *) malloc(256);;//(char *) malloc(256);
   
@@ -183,24 +191,23 @@ void testCaseGarbageOne(){
 
 }
 
-// void testCaseGarbageTwo(){
-//   cout << "----------- Garbage TEST CASE 2 -----------" << endl;
+void testCaseGarbageTwo(){
+  cout << "----------- Garbage TEST CASE 2 -----------" << endl;
 
-//   if(true){
-//     funcCall();
-//   }
-//   size_t s = 0;
-//   while(s<=maxNextGC){
-//     char * q2 = (char *)malloc(10000); 
-//     strcpy(q2, "GC : This should be intact.\n");
-//     // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
-//     s+=10000;
-//   }
-//   char * outScp = (char *) malloc(256);
-//   cout << "Address of outScp is ::: " << (size_t) outScp << endl;
-//   cout << "----------- Garbage TEST CASE 1 END -----------" << endl;
-
-// }
+  if(true){
+    funcCall();
+  }
+  size_t s = 0;
+  while(s<=maxNextGC){
+    char * q2 = (char *)malloc(10000); 
+    strcpy(q2, "GC : This should be intact.\n");
+    // cout << "Address of inBetween Variables is ::: " << (size_t) q2 << endl;
+    s+=10000;
+  }
+  char * outScp = (char *) malloc(256);
+  cout << "Address of outScp is ::: " << (size_t) outScp << endl;
+  cout << "----------- Garbage TEST CASE 2 END -----------" << endl;
+}
 
 int main()
 {
