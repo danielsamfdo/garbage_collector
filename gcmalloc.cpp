@@ -61,11 +61,11 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   else{
     // We Need to carefully allocate memory, no two threads can have same memory address ptr
     //http://www.devx.com/tips/Tip/12582
-    if(objectsAllocated > 240){
+    // if(objectsAllocated > 100){
       if(!initialized)
         nextGC = maxNextGC;
       initialized = true;
-    }
+    // }
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
     // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
@@ -94,10 +94,10 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   block->setCookie();
   heapLock.unlock();
   allocated += allocatedForTheRequest;
-  // if(initialized){
-  tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
+  if(initialized){
+  // tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
   //   nextGC = nextGC - allocatedForTheRequest;
-  // }
+  }
   nextGC = nextGC - allocatedForTheRequest;
   block->setAllocatedSize(allocatedForTheRequest);
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two

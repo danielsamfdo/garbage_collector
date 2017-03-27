@@ -64,7 +64,7 @@ void functionTwo(Header *h){
   h->nextObject = t;
 }
 
-void testCaseOne(){
+void testCaseLivenessOne(){
   // check if Object is still live
   void * p;
   if(true){
@@ -80,28 +80,72 @@ void testCaseOne(){
   strcpy(m4, "m4 : This should be intact.\n");
   cout << (char *)p << endl;
   assert(strcmp((char*)p, "m : This should be intact.\n") == 0);
+  void * ptr;
+  Header *h;
+  ptr = ((char *)((void *)p)) - sizeof(Header);
+  h = static_cast<Header*>(ptr);
+  assert(h->validateCookie()==true);
+  assert(h->getAllocatedSize()==maxNextGC);
+  assert(*testme == 5000);
   // 
 
 }
 
+void testCaseLivenessTwo(){
+  cout << "----------- LIVENESS TEST CASE 2 -----------" << endl;
+  void * p;
+  int offset = 20;
+  void * startStr;
+
+  if(true){
+    char * q = (char *) malloc(256);
+    cout << "Address of Q is ::: " << (size_t) q << endl;
+    strcpy(q, "q : This should be intact.\n");
+    q = q + offset;  
+    p = q;
+    cout<< (char*)p<<endl;
+  }
+  size_t s = 0;
+  while(s<=maxNextGC){
+    // cout<< (char*)p<<endl;
+    char * q2 = (char *)malloc(256); 
+    strcpy(q2, "q2 : This should be intact.\n");
+    s+=256;
+  }
+
+  
+  void * ptr;
+  Header *h;
+  ptr = ((char *)(p)) - offset - sizeof(Header);
+  p = (char *)(p) - offset;
+  h = static_cast<Header*>(ptr);
+  assert(h->validateCookie()==true);
+  assert(h->getAllocatedSize()==256);
+  cout << "Address of P is ::: " << (size_t) p << endl;
+  cout << (char *)p << endl;
+  assert(strcmp((char*)p, "q : This should be intact.\n") == 0);
+  // 
+  cout << "----------- LIVENESS TEST CASE END -----------" << endl;
+
+}
 
 int main()
 {
 
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
-  testGlobalsStillPresent();
-  Header *h = (Header *)malloc(sizeof(Header));
+  // testGlobalsStillPresent();
+  // Header *h = (Header *)malloc(sizeof(Header));
 
-  if(true){
-    // functionTwo(h);
-    char * t2 = (char *) malloc(maxNextGC);
-    // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
-    cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
-    // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
-  }
-  testCaseOne();
-
+  // if(true){
+  //   // functionTwo(h);
+  //   char * t2 = (char *) malloc(maxNextGC);
+  //   // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
+  //   cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
+  //   // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
+  // }
+  // testCaseLivenessOne();
+  testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);
   // int * p2 = (int *) malloc(8);
   // Header *h1 = (Header *)malloc(sizeof(Header));
