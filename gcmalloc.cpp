@@ -306,7 +306,7 @@ void GCMalloc<SourceHeap>::sweep(){
     if(!iterator->isMarked()){
       void * headerToBeFreedPtr = static_cast<char *>((void *)iterator);
       iterator = iterator->nextObject;
-      tprintf("Freeing at @ \n", (size_t)ptr);
+      // tprintf("Freeing at @ \n", (size_t)ptr);
       bytesReclaimedLastGC += h->getAllocatedSize();
       privateFree(headerToBeFreedPtr);
     }else{

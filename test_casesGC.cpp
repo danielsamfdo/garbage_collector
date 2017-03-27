@@ -27,15 +27,27 @@ Node * addObject(){
   return h;
 }
 
-void testCaseGarbageFour(){
+void testCaseGarbageFive(){
+  gc();
   Node * h = (Node*)malloc(sizeof(Node));
   Node * it = h;
-  int i;
-  while(i<=100){
+  int i=1;
+  while(i<5){
     it->nextObject = addObject();
+    tprintf("Address of It : @ \n", (size_t)(it->nextObject));
     it = it->nextObject;
     i++;
   }
+  h->nextObject = nullptr;
+  gc();
+  Node * h1 = (Node*)malloc(sizeof(Node));
+  tprintf("Address of h1 : @ \n", (size_t)(h1));
+  h1 = (Node*)malloc(sizeof(Node));
+  tprintf("Address of h1 : @ \n", (size_t)(h1));
+  h1 = (Node*)malloc(sizeof(Node));
+  tprintf("Address of h1 : @ \n", (size_t)(h1));
+  h1 = (Node*)malloc(sizeof(Node));
+  tprintf("Address of h1 : @ \n", (size_t)(h1));
 }
 
 void functionOne(){
@@ -243,20 +255,21 @@ int main()
   cout << "----------- MAIN PROGAM -----------" << endl;
   testCaseGarbageOne();
   testGarbageFour();
-  // cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
-  // testGlobalsStillPresent();
-  // Header *h = (Header *)malloc(sizeof(Header));
+  testCaseGarbageFive();
+  cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
+  testGlobalsStillPresent();
+  Header *h = (Header *)malloc(sizeof(Header));
 
-  // if(true){
-  //   // functionTwo(h);
-  //   char * t2 = (char *) malloc(maxNextGC);
-  //   char * testOther = (char *) malloc(maxNextGC);
-  //   // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
-  //   cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
-  //   // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
-  // }
+  if(true){
+    // functionTwo(h);
+    char * t2 = (char *) malloc(maxNextGC);
+    gc();
+    // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
+    cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
+    // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
+  }
 
-  // cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
+  cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
   // testCaseLivenessOne();
   // testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);
