@@ -291,7 +291,7 @@ int main()
     char * t2 = (char *) malloc(maxNextGC);
     gc();
     // char * t3 = (char *) malloc(maxNextGC+1); //Trigger GC
-    cout<< "Address of T2 should be equal to Address of T4  :  :-)" << (size_t)t2 << endl;
+    cout<< "Address of T2 should be equal to Address of T3  :  :-)" << (size_t)t2 << endl;
     // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
   }
 
