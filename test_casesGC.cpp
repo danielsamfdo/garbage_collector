@@ -274,6 +274,8 @@ int main()
   testCaseGarbageOne();
   testGarbageFour();
   testCaseGarbageFive();
+  cout<< "----------- ----- -----------"<<endl;
+  gc();
   cout<< "----------- TEST GLOBALS CASE START -----------"<<endl;
   testGlobalsStillPresent();
   Header *h = (Header *)malloc(sizeof(Header));
@@ -297,47 +299,12 @@ int main()
   gc();
   cout<<"No object collected"<<endl;
   cout<< "----------- GLOBAL CASE 2 END -----------"<<endl;
-  // testCaseLivenessOne();
-  // testCaseLivenessTwo();
-  // int ** p1 = (int **) malloc(8);
-  // int * p2 = (int *) malloc(8);
-  // Header *h1 = (Header *)malloc(sizeof(Header));
-
-  // char * q = (char *) malloc(256);
-  // strcpy(q, "This should be intact.\n");
-  // if(true){
-  //   void * p;
-  //   void * ptr;
-  //   Header *h;
-  //   cout<< "p1 address = " << (size_t) &p1 << ", p2 address = " << (size_t) &p2 << endl;
-  //   // TRIGGER GC CONDITION HAPPENS
-  //   char * q2 = (char *) malloc(128);
-  //   p = p1;
-  //   ptr = static_cast<char*>(p) - sizeof(Header);
-  //   h = static_cast<Header*>(ptr);
-  //   cout<< "Header h for the pointer p1 " << (size_t) &p1 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
-    
-  //   p = p2;
-  //   ptr = static_cast<char*>(p) - sizeof(Header);
-  //   h = static_cast<Header*>(ptr);
-  //   cout<< "Header h for the pointer p2 " << (size_t) &p2 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
-
-  //   p = q; 
-  //   ptr = static_cast<char*>(p) - sizeof(Header);
-  //   h = static_cast<Header*>(ptr);
-  //   cout<< "Header h for the pointer q " << (size_t) &p1 << " is " <<h->isMarked()<< " and cookie is " << h->validateCookie() <<endl;
-
-  //   cout<< " Old Variable with requirements(16) Address : " << (size_t) q2 <<endl;
-
-  // }
-  // if(true){
-  //   functionOne();
-  //   functionTwo(h1);
-
-  //   char * t2 = (char *) malloc(2000);
-  //   cout << "Header for h is present in " << (size_t)h1 << endl;
-  //   // GC Would be triggered, now need to make sure the old one is getting added to freed objects;  
-  // }
+  cout<< "----------- TEST LIVENESS 1 START -----------"<<endl;
+  testCaseLivenessOne();
+  cout<< "----------- TEST LIVENESS 1 END -----------"<<endl;
+  cout<< "----------- TEST LIVENESS 2 START -----------"<<endl;
+  testCaseLivenessTwo();
+  cout<< "----------- TEST LIVENESS 2 CASE END -----------"<<endl;
   
   return 0;
 }

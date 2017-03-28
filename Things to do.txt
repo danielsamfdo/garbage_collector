@@ -8,3 +8,6 @@ Check isPointer - DONE
 objectsAllocated - DONE
 
 
+ADD CONDITIONS FOR TESTING FREED OBJECTS 
+
+BIG HEADER ARRAY
