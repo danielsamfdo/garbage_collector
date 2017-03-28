@@ -26,6 +26,24 @@ Node * addObject(){
   h->nextObject = nullptr;
   return h;
 }
+Node * t;
+
+void testCaseGlobal(){
+  t =(Node*) malloc(sizeof(Node));
+  gc();
+  Node * t1 =(Node*) malloc(sizeof(Node));
+  t->nextObject = t1;
+  Node * t2 =(Node*) malloc(sizeof(Node));
+  t1->nextObject = t2;
+  return;
+}
+
+void testCaseRecursion(){
+  gc();
+  Node * h = (Node *) malloc(sizeof(Node));
+  h->nextObject = h;
+  gc();
+}
 
 void testCaseGarbageFive(){
   gc();
@@ -270,6 +288,15 @@ int main()
   }
 
   cout<< "----------- TEST GLOBALS CASE END -----------"<<endl;
+
+  cout<< "----------- TEST CASE RECURSION -----------"<<endl;
+  testCaseRecursion();  
+  cout<< "----------- TEST CASE RECURSION -----------"<<endl;
+  cout<< "----------- GLOBAL CASE 2 -----------"<<endl;
+  testCaseGlobal();
+  gc();
+  cout<<"No object collected"<<endl;
+  cout<< "----------- GLOBAL CASE 2 END -----------"<<endl;
   // testCaseLivenessOne();
   // testCaseLivenessTwo();
   // int ** p1 = (int **) malloc(8);

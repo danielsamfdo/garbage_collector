@@ -71,16 +71,10 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     }
     ptr = SourceHeap::malloc(maxRequiredSizeFromHeap);
     block = new (ptr) Header;
-    // tprintf("Size of Header @\n",(size_t) static_cast<char*>(ptr));
     endHeap = (static_cast<char*>(ptr) + headerSize + allocatedForTheRequest);
-    // void * endPointer = (static_cast<char*>(endHeap));
-    // tprintf("START HEAP  @\n",(size_t)startHeap);
-    // tprintf("END HEAP UPDATE @\n",(size_t)endHeap);
   }
   objectsAllocated+=1;
   bytesAllocatedSinceLastGC +=  allocatedForTheRequest;
-  // tprintf("objectsAllocated @\n", objectsAllocated);
-
 
   // When we are altering links, we need to make sure it is thread safe.
   if(allocatedObjects==nullptr){
@@ -97,10 +91,6 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   block->setCookie();
   heapLock.unlock();
   allocated += allocatedForTheRequest;
-  // if(initialized){
-  // tprintf("next GC :: @, Alloc @ , next GC : @ \n", nextGC,allocatedForTheRequest, nextGC - allocatedForTheRequest);
-    // nextGC = nextGC - allocatedForTheRequest;
-  // }
   nextGC = nextGC - allocatedForTheRequest;
   block->setAllocatedSize(allocatedForTheRequest);
   // http://stackoverflow.com/questions/6449935/increment-void-pointer-by-one-byte-by-two
@@ -215,7 +205,6 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
   }
   
   if( (freedObjects[sizeClass]!=nullptr)){
-    // tprintf("Freed Object Found - Not triggering GC\n");
     return false;
   }
   if((bytesAllocatedSinceLastGC - bytesReclaimedLastGC > (maxHeapMemoryAllowed/8) ) && ((maxHeapMemoryAllowed/3) < allocated)){
@@ -237,7 +226,6 @@ void GCMalloc<SourceHeap>::gc(){
   if(!inGC){
     void * st = SourceHeap::getStart();
     inGC = true;
-    //tprintf("Start @ End @ \n",(size_t)startHeap,(size_t)endHeap);
     tprintf("Bytes Allocated B4 this GC : @\n",bytesAllocatedSinceLastGC);
     tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
@@ -252,11 +240,8 @@ void GCMalloc<SourceHeap>::gc(){
   // Mark all reachable objects.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::mark(){
-  // tprintf("Doing Mark Phase\n");
-  sp.walkGlobals([&](void * p){ if(isPointer(p)){ markReachable(p); } });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
-  // tprintf("It is allocated : @ pointer \n",h->getAllocatedSize()); 
-  sp.walkStack([&](void * p){ if(isPointer(p)){ markReachable(p); }});// });//void *ptr = static_cast<char*>(p) - sizeof(Header); Header *h = static_cast<Header*>(ptr); int v = h->validateCookie(); tprintf("It is @ pointer @\n",v,(size_t)ptr);});
-
+  sp.walkGlobals([&](void * p){ if(isPointer(p)){ markReachable(p); } });
+  sp.walkStack([&](void * p){ if(isPointer(p)){ markReachable(p); }});
 }
 
 // Mark one object as reachable and recursively mark everything reachable from it.
@@ -288,7 +273,6 @@ void GCMalloc<SourceHeap>::markReachable(void * ptr){
     scan(start,end);
     //tprintf("It is allocated address : @ pointer and is marked : @ \n",(size_t)ptr, (size_t)h->isMarked());
   }
-  // tprintf("It is allocated : @ pointer \n",(size_t)h->validateCookie());
 }
 
 // Reclaim all unreachable objects (add to free lists).
@@ -343,13 +327,12 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   objectsAllocated-=1;
   assert(objectsAllocated>=0);
   assert((h->validateCookie()));
-  // tprintf("valid Header for freeing : @\n",(size_t)(h->validateCookie()));
   allocated -= h->getAllocatedSize();
 }
 
-  // Returns true if the argument looks like a pointer that we allocated.
-  // This should be as precise as possible without ignoring real allocated objects.
-  // Just returning true is *not* an option :)
+// Returns true if the argument looks like a pointer that we allocated.
+// This should be as precise as possible without ignoring real allocated objects.
+// Just returning true is *not* an option :)
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::isPointer(void * p){
   if(startHeap<= p && p<=endHeap){
@@ -358,7 +341,6 @@ bool GCMalloc<SourceHeap>::isPointer(void * p){
   }
   return false;
 }
-
 
 // number of bytes currently allocated  
 template <class SourceHeap>
