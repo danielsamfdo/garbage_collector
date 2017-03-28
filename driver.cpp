@@ -38,8 +38,8 @@ extern "C" {
   void xxmalloc_unlock() {
   }
 
-  void gc()
-  {
-    getHeap().gc();
-  }
+  // void gc()
+  // {
+  //   getHeap().gc();
+  // }
 }

@@ -275,6 +275,7 @@ void testCaseGarbageTwo(){
 int main()
 {
 
+  cout<<" TO RUN THIS FILE , PLS UNCOMMENT MAKE FILE COMMENTSS, DRIVER.CPP COMMENTS AND ADD VOID GC() method in GCMALLOC.hh as a public method"<<endl;
   cout << "-----------" << endl;
   cout << "----------- MAIN PROGAM -----------" << endl;
   testCaseGarbageOne();

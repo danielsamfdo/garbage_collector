@@ -1,7 +1,7 @@
 #include<assert.h>
 static const auto maxPowerOfTwoAllowed = 29;
 static const auto minPowerOfTwoAllowed = 15;
-static const long maxNextGC = 10000;
+static const long maxNextGC = 10000; // Only for start next GC will use this constant maxNextGC, Then later onwards , Will Reinitialize nextGC to a bigger GC Window based on maxHeapMemoryAllowed
 size_t maxHeapMemoryAllowed;
 template <class SourceHeap>
 GCMalloc<SourceHeap>::GCMalloc(){
@@ -13,6 +13,7 @@ GCMalloc<SourceHeap>::GCMalloc(){
     }
     initialized = false;
     bytesAllocatedSinceLastGC = 0;
+    bytesReclaimedLastGC = 0;
     nextGC = maxNextGC;
     tprintf("Max heap Mem Allowed : @ ", SourceHeap::getRemaining());
     maxHeapMemoryAllowed = SourceHeap::getRemaining();
@@ -41,7 +42,6 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
   bool BlockAvailable = false;
   Header *block = nullptr;
   int maxAvailableIndices = Threshold/Base + 15;
-  heapLock.lock();
 
   int index = sizeClass;
   if(freedObjects[index]!=nullptr){
@@ -89,7 +89,6 @@ void * GCMalloc<SourceHeap>::malloc(size_t sz) {
     allocatedObjects = block;
   }
   block->setCookie();
-  heapLock.unlock();
   allocated += allocatedForTheRequest;
   nextGC = nextGC - allocatedForTheRequest;
   block->setAllocatedSize(allocatedForTheRequest);
@@ -198,22 +197,22 @@ void GCMalloc<SourceHeap>::scan(void * start, void * end){
 // (though not too frequently) using the fields below.
 template <class SourceHeap>
 bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
-  // TO DO ADD CONDITIONS
   int sizeClass = GCMalloc<SourceHeap>::getSizeClass(szRequested);
-  if(sizeClass==-1){ // If Unsatisfiable Request Return NULL
+  if(sizeClass==-1){ // If Unsatisfiable Request Return false
     return false;
   }
   
   if( (freedObjects[sizeClass]!=nullptr)){
     return false;
   }
-  if((bytesAllocatedSinceLastGC - bytesReclaimedLastGC > (maxHeapMemoryAllowed/8) ) && ((maxHeapMemoryAllowed/3) < allocated)){
-    tprintf("Trigger GC because of large size of Allocated and bytes reclaimed might have been used. \n");
+  if((bytesAllocatedSinceLastGC - bytesReclaimedLastGC > 0 ) && ((maxHeapMemoryAllowed/3) < allocated)){
+    // tprintf("Trigger GC because of large size of Allocated and bytes reclaimed might have been used. \n");
     return true;
   }
   if(nextGC <=0){
+    // Reinitialize to a bigger GC Window from now on 
     nextGC = maxHeapMemoryAllowed/64;
-    tprintf("Trigger GC because of nextGC \n");
+    // tprintf("Trigger GC because of nextGC \n");
     return true;
   }
   
@@ -224,14 +223,15 @@ bool GCMalloc<SourceHeap>::triggerGC(size_t szRequested){
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::gc(){
   if(!inGC){
-    void * st = SourceHeap::getStart();
     inGC = true;
+    tprintf("GC Collection Starting ------------\n");
     tprintf("Bytes Allocated B4 this GC : @\n",bytesAllocatedSinceLastGC);
     tprintf("Objects Allocated before mark and sweep @ \n",objectsAllocated);
     mark();
     sweep();
     tprintf("Objects Allocated after mark and sweep @ \n",objectsAllocated);
     tprintf("Bytes Reclaimed For this GC : @\n",bytesReclaimedLastGC);
+    tprintf("GC Collection Ended ------------\n");
     bytesAllocatedSinceLastGC = 0;
     inGC = false;
   }
@@ -304,7 +304,7 @@ void GCMalloc<SourceHeap>::sweep(){
 // Free one object.
 template <class SourceHeap>
 void GCMalloc<SourceHeap>::privateFree(void * p){
-  void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
+  // void * ptr = static_cast<char *>((void *)p)+sizeof(Header);
   // tprintf("Freeing ADDRESS  :  @ \n", (size_t) ptr);
   Header *h = static_cast<Header*>(p);
   assert(h->validateCookie());
@@ -326,7 +326,6 @@ void GCMalloc<SourceHeap>::privateFree(void * p){
   freedObjects[sizeClass] = h;
   objectsAllocated-=1;
   assert(objectsAllocated>=0);
-  assert((h->validateCookie()));
   allocated -= h->getAllocatedSize();
 }
 

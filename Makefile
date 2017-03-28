@@ -8,7 +8,7 @@ all:
 	clang++ $(FLAGS) -c driver.cpp
 	clang++ $(FLAGS) -shared gnuwrapper.o driver.o -Bsymbolic -o libgcmalloc.so -ldl -lpthread
 	clang++ -std=c++14 -g testme.cpp -L. -lgcmalloc -o testme
-	clang++ -std=c++14 -g test_casesGC.cpp -L. -lgcmalloc -o test_casesGC
+	# clang++ -std=c++14 -g test_casesGC.cpp -L. -lgcmalloc -o test_casesGC
 endif
 
 ifeq ($(UNAME_S),Darwin)
@@ -18,5 +18,5 @@ all:
 	# clang++ $(FLAGS) driver.cpp testme.cpp -o testme
 	clang++ $(FLAGS) -compatibility_version 1 -current_version 1 -dynamiclib -install_name './libgcmalloc.dylib' macwrapper.o driver.o -o libgcmalloc.dylib
 	clang++ -std=c++14 -g testme.cpp -L. -lgcmalloc -o testme
-	clang++ -std=c++14 -g test_casesGC.cpp -L. -lgcmalloc -o test_casesGC
+	# clang++ -std=c++14 -g test_casesGC.cpp -L. -lgcmalloc -o test_casesGC
 endif
