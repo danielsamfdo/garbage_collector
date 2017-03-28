@@ -207,21 +207,27 @@ void testLivenessThree(){
 }
 
 void testGarbageFour(){
-  int * t = (int  *) malloc(512);
+
+  char * t = (char  *) malloc(512);
   tprintf( "Address of ptr t1 @ \n ",(size_t)t);
-  t = (int  *) malloc(512);
+  t = (char  *) malloc(512);
   tprintf( "Address of ptr t2 @ \n ",(size_t)t);
-  t = (int  *) malloc(512);
+  t = (char  *) malloc(512);
   tprintf( "Address of ptr t3 @ \n ",(size_t)t);
-  t = (int  *) malloc(512);
+  t = (char  *) malloc(512);
   tprintf( "Address of ptr t @ \n ",(size_t)t);
+  strcpy(t, "q2 : This should be intact.\n");
   gc();
-  int *t1 = (int  *) malloc(512);
+  char *t1 = (char  *) malloc(512);
   tprintf( "Address of ptr t1 @ \n ",(size_t)t1);
-  int *t2 = (int  *) malloc(512);
+  strcpy(t1, "GARBGE \n");
+  char *t2 = (char  *) malloc(512);
   tprintf( "Address of ptr t2 @ \n ",(size_t)t2);
-  int *t3 = (int  *) malloc(512);
+  strcpy(t2, "GARBGE \n");
+  char *t3 = (char  *) malloc(512);
+  strcpy(t3, "GARBGE \n");
   tprintf( "Address of ptr t3 @ \n ",(size_t)t3);
+  assert(strcmp((char*)t, "q2 : This should be intact.\n")==0);
 }
 
 void testGarbageThree(){
